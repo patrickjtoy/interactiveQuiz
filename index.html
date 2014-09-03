@@ -2,10 +2,20 @@
 <html>
 <head>
 	<title>Interactive Quiz</title>
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Wrapper div for the quiz -->
-	<div id="wrapper" class="wrapper"></div>
+  <!-- Template for the quiz -->
+	<div class="container wrapper">
+		<div class="row"><h1 class="title col-md-4">Interactive Quiz</h1></div>
+		<div class="row hidden"><span class="response alert col-md-4"></span></div>
+		<div class="row"><span class="question bg-primary col-md-4"></span></div>
+		<div class="row"><span class="options col-md-4"></span></div>
+		<div class="row">
+			<span class="col-md-4"><button class="btn btn-primary disabled nextBtn">Next</button></span>
+		</div>
+	</div>
 	<!-- Include our javascript to power the app -->
 	<script type="text/javascript" src="js/quiz.js"></script>
 </body>

@@ -1,204 +1,221 @@
 (function() {
 
-	var quiz = ( typeof quiz !== 'undefined' ? quiz : {} );
+	"use strict";
 
-	// CONFIGURE DEFAULTS
-	// =========================================================================
-	quiz.wrapper      = document.getElementById('wrapper');
-	quiz.counter      = 0;
-	quiz.allQuestions = [
-		{
-			question: "Who is Prime Minister of the United Kingdom?",
-			choices: ["David Cameron", "Gordon Brown", "Winston Churchill", "Tony Blair"],
-			correctAnswer:0
+	var $ = function (el) {
+		return document.querySelector(el);
+	};
+
+	String.prototype.replaceAll = function (replaceThis, withThis) {
+  	var re = new RegExp(replaceThis, "g");
+  	return this.replace(re, withThis);
+	};
+
+	Object.prototype.disableEl = function () {
+		this.setAttribute('disabled', 'disabled');
+	};
+
+	Object.prototype.addClass = function(className) {
+		this.className += ' ' + className;
+	};
+
+	Object.prototype.removeClass = function (className) {
+		this.className = this.className.replaceAll(className, '');
+	};
+
+	var quiz = {
+
+		// CACHE SELECTORS & VARIABLES
+		// ==============================
+		counter: 0,
+		wrapper:    $('.wrapper'),
+		responseEl: $('.response'),
+		questionEl: $('.question'),
+		optionsEl:  $('.options'),
+		nextBtn:    $('.nextBtn'),
+
+		// GET ALL QUESTIONS
+		// ==============================
+		getAllQuestions: function() {
+
+			return [
+				{
+					question: "Who is Prime Minister of the United Kingdom?",
+					choices: ["David Cameron", "Gordon Brown", "Winston Churchill", "Tony Blair"],
+					correctAnswer: 0
+				},
+				{
+					question: "Who is President of the United States?",
+					choices: ["Bill Clinton", "Ronald Reagan", "Barack Obama", "George Bush"],
+					correctAnswer: 2
+				}
+			];
+
 		},
-		{
-			question: "Who is President of the United States?",
-			choices: ["Bill Clinton", "Ronald Reagan", "Barack Obama", "George Bush"],
-			correctAnswer:2
-		}
-	];
 
-	// CACHE VARIABLES
-	// =======================================================================
-	quiz.cache = function() {
+		// GET A QUESTION
+		// ==============================
+		getQuestion: function() {
 
-		this.question   = document.querySelector('.question');
-		this.radioBtns  = document.querySelectorAll('.option');
-		this.numChoices = this.radioBtns.length;
-		this.nextBtn    = document.getElementById('nextBtn');
-		this.responseEl = this.response();
+			this.questionObj = this.allQuestions[this.counter];
 
-	};
+			return this.questionObj.question;
 
-	// SET PAGE TITLE
-	// =========================================================================
-	quiz.getTitle = function() {
+		},
 
-		this.titleEl = document.createElement('h1');
-		this.titleText = 'Interactive Quiz';
-		this.titleEl.className = 'title';
-		this.titleEl.innerText = this.titleText;
+		// GET QUESTION OPTIONS
+		// ==============================
+		getOptionTmpl: function(question) {
 
-		return this.titleEl;
+			var numChoices     = this.questionObj.choices.length,
+					optionEl,
+					optionRadio,
+					optionLabel,
+					optionTmpl = '<ul>';
 
-	};
+			for (var i = 0; i < numChoices; i++) {
 
-	//
-	// =========================================================================
-	quiz.getQuestion = function() {
+				var optionRadioId = 'option-' + i;
 
-		this.questionObj          = this.allQuestions[this.counter];
+				optionRadio = '<input type="radio" name="option" id="' + optionRadioId + '" class="option" data-answerId="' + i + '" />';
 
-		this.questionEl           = document.createElement('div');
-		this.questionEl.className = 'question';
-		this.questionEl.innerText = this.questionObj.question;
+				optionLabel = '<label for="' + optionRadioId + '">' + this.questionObj.choices[i] + '</label>';
 
-		this.questionEl.appendChild( this.getOptions() );
+				optionTmpl += '<li>' + optionRadio + optionLabel + '</li>';
 
-		return this.questionEl;
-
-	};
-
-	//
-	// =========================================================================
-	quiz.getOptions = function(question) {
-
-		this.answersWrapper = document.createElement('div');
-		this.answersWrapper.className = 'answers';
-		this.choices = this.questionObj.choices.length;
-
-		for (var i = 0; i < this.choices; i++) {
-
-			this.answerOption         = document.createElement('div');
-
-			this.radioInput           = document.createElement('input');
-			this.radioInput.setAttribute('type', 'radio');
-			this.radioInput.setAttribute('name', 'option');
-			this.radioInput.setAttribute('data-answerId', i);
-			this.radioInput.id        = 'option' + i;
-			this.radioInput.className = 'option';
-
-			this.label                = document.createElement('label');
-			this.label.innerHTML      = this.questionObj.choices[i];
-
-			this.answerOption.appendChild(this.radioInput);
-			this.answerOption.appendChild(this.label);
-
-			this.answersWrapper.appendChild(this.answerOption);
-
-		}
-
-		return this.answersWrapper;
-
-	};
-
-	//
-	// =========================================================================
-	quiz.checkAnswer = function(el) {
-
-		var answerId = el.getAttribute('data-answerId');
-
-		return this.allQuestions[this.counter].correctAnswer == answerId;
-
-	};
-
-	quiz.nextQuestion = function(qNum) {
-
-		this.question.remove();
-		wrapper.appendChild( this.getQuestion(qNum) );
-
-	};
-
-	// CREATE BUTTON
-	// =========================================================================
-	quiz.getNextBtn = function() {
-
-		// TODO: make this a button constructor
-
-		var nextBtnEl = document.createElement('button');
-
-		nextBtnEl.id = 'nextBtn';
-		nextBtnEl.className = 'nextBtn';
-		nextBtnEl.innerText = 'Next';
-
-		return nextBtnEl;
-
-	};
-
-	//
-	//
-	quiz.response = function(res) {
-
-		var responseEl = document.createElement('div');
-
-		if(res === true) {
-
-			for(var i = 0; i < this.numChoices; i++) {
-				this.radioBtns[i].setAttribute('disabled', 'disabled');
 			}
 
-			responseEl.appendChild(document.createTextNode('You are correct!'));
+			return optionTmpl + '</ul>';
+
+		},
+
+		// CHECK SELECTED ANSWER
+		// ==============================
+		checkAnswer: function(el) {
+
+			var answerId = el.getAttribute('data-answerId');
+
+			return this.allQuestions[this.counter].correctAnswer == answerId;
+
+		},
+
+		// GET RESPONSE
+		// ==============================
+		getResponse: function(el) {
+
+			var responseEl = document.createElement('div'),
+					radioBtns  = document.querySelectorAll('.option');
+
+			if (this.checkAnswer(el) === true) {
+
+				Array.prototype.forEach.call(radioBtns, function(el) {
+					el.disableEl();
+				});
+
+				responseEl.appendChild(document.createTextNode('You are correct!'));
+
+			}
+
+			else {
+
+					responseEl.appendChild(
+						document.createTextNode('Not quite, try again!')
+					);
+
+			}
+
+			return responseEl;
+
+		},
+
+		// DISPLAY RESPONSE
+		// ==============================
+		displayResponse: function(el) {
+
+			if ( this.responseEl !== null )
+				this.responseEl.innerHTML = '';
+
+			this.responseEl.parentNode.removeClass('hidden');
+
+			this.responseEl.addClass('alert-warning');
+
+			this.responseEl.appendChild( this.getResponse(el) );
+
+		},
+
+		// GET NEXT QUESTION
+		// ==============================
+		nextQuestion: function(qNum) {
+
+			this.question.remove();
+			wrapper.appendChild( this.getQuestion(qNum) );
+
+		},
+
+		// REGISTER EVENT HANDLERS
+		// ==============================
+		events: {
+
+			// Loop over radioBtns in the DOM, assigning a click handler to each one
+			clickRadioBtn: function() {
+
+				var self      = this, // 'this' is the quiz object
+						radioBtns = document.querySelectorAll('.option');
+
+				Array.prototype.forEach.call(radioBtns, function(el) {
+					el.addEventListener('click', function() {
+						self.displayResponse.call(self, this);
+					});
+				});
+
+			},
+
+			clickNextBtn: function() {
+
+				var self = this;
+
+				// Assign a click handler to nextBtn
+				this.nextBtn.addEventListener('click', function() {
+					self.nextQuestion(++self.counter);
+				});
+
+			},
+
+			changeResponse: function() {
+
+				// Assign a change handler to this.response
+				this.response.addEventListener('onchange', function() {
+					console.log('changed');
+				});
+
+			},
+
+			initialize: function() {
+
+				this.clickRadioBtn.call(quiz);
+
+			}
+
+		},
+
+		// INITIALIZE APP
+		// ==============================
+		initialize: function() {
+
+			// Set globals
+			this.allQuestions = this.getAllQuestions();
+
+			this.questionEl.innerText = this.getQuestion();
+			this.optionsEl.innerHTML = this.getOptionTmpl();
+
+			this.events.initialize();
 
 		}
-
-		else {
-
-				responseEl.appendChild(
-					document.createTextNode('Not quite, try again!')
-				);
-
-		}
-
-		return responseEl;
-
-	};
-
-	// REGISTER EVENT HANDLERS
-	// =========================================================================
-	quiz.events = function() {
-
-		// Loop over radioBtns in the DOM, assigning a click handler to each one
-		var btnLoop = function (element, index, array) {
-			element.addEventListener('click', function() {
-				quiz.response = quiz.checkAnswer(this);
-			});
-		};
-
-		Array.prototype.forEach.call(this.radioBtns, btnLoop);
-
-		// Assign a click handler to nextBtn
-		this.nextBtn.addEventListener('click', function() {
-			quiz.nextQuestion(++quiz.counter);
-		});
-
-		// Assign a change handler to this.response
-		this.response.addEventListener('onchange', function() {
-			console.log('changed');
-		});
-
-	};
-
-	// BOOTSTRAP APP
-	// =========================================================================
-	quiz.app = function(counter) {
-
-		var title         = this.getTitle(),
-				firstQuestion = this.getQuestion(),
-				nextBtn       = this.getNextBtn();
-
-		this.wrapper.appendChild( title );
-		this.wrapper.appendChild( firstQuestion );
-		this.wrapper.appendChild( nextBtn );
-
-		this.cache();
-
-		this.events();
 
 	};
 
 	// START APP
-	// =========================================================================
-	window.onload = quiz.app();
+	// ==============================
+	window.onload = quiz.initialize();
 
 })();
