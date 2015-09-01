@@ -1,0 +1,15 @@
+.wrapper {
+  margin: 0 1em;
+}
+.wrapper .question {
+  padding: 0.25em 0.5em;
+}
+.wrapper ul,
+.wrapper ol {
+  list-style-type: none;
+  margin: 1em 0;
+  padding-left: 0.5em;
+}
+.wrapper label {
+  padding-left: 0.25em;
+}
