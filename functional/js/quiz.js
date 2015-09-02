@@ -25,11 +25,13 @@
     var disableElement = function(element) {
         element.setAttribute("disabled", "disabled");
         addClass(element, "disabled");
+        return element;
     };
 
     var enableElement = function(element) {
         element.removeAttribute("disabled");
         removeClass(element, "disabled");
+        return element;
     };
 
     var addClass = function(element, className) {
@@ -47,9 +49,9 @@
         // CACHE SELECTORS & VARIABLES
         // ==============================
         var wrapper         = $(".wrapper");
-        var responseElement = $(".response");
-        var questionElement = $(".question");
-        var optionsElement  = $(".options");
+        var responseWrapper = $(".response");
+        var questionWrapper = $(".question");
+        var optionsWrapper  = $(".options");
         var nextButton      = $(".nextButton");
         var quizObjects     =
             [
@@ -103,7 +105,7 @@
                 displayQuestion(index);
 
                 // Hide response message
-                addClass(responseElement.parentNode, "hidden");
+                addClass(responseWrapper.parentNode, "hidden");
 
                 // Disable next button
                 addClass(nextButton, "disabled");
@@ -117,10 +119,10 @@
         // ==============================
         function clearPreviousQuestion(index) {
             var quizObject = quizObjects[index];
-            var children = Array.prototype.slice.call(optionsElement.childNodes);
+            var children = Array.prototype.slice.call(optionsWrapper.childNodes);
 
             children.forEach(function(child) {
-                optionsElement.removeChild(child);
+                optionsWrapper.removeChild(child);
             });
         }
 
@@ -129,8 +131,8 @@
         function displayQuestion(index) {
             var quizObject = quizObjects[index];
 
-            questionElement.innerText = quizObject.question;
-            optionsElement.appendChild( buildOptionTemplate(quizObject) );
+            questionWrapper.innerText = quizObject.question;
+            optionsWrapper.appendChild( buildOptionTemplate(quizObject) );
         }
 
         // CHECK SELECTED ANSWER
@@ -147,19 +149,19 @@
         // ==============================
         function displayResponse(optionElement, quizObject) {
 
-            if ( responseElement !== null ) responseElement.innerHTML = "";
+            if ( responseWrapper !== null ) responseWrapper.innerHTML = "";
 
-            removeClass(responseElement.parentNode, "hidden");
+            removeClass(responseWrapper.parentNode, "hidden");
 
             if (checkAnswer(optionElement, quizObject) === true) {
-                removeClass(responseElement, "alert-warning");
-                addClass(responseElement, "alert-success");
-                responseElement.appendChild( buildResponseTemplate(optionElement, quizObject, true) );
+                removeClass(responseWrapper, "alert-warning");
+                addClass(responseWrapper, "alert-success");
+                responseWrapper.appendChild( buildResponseTemplate(optionElement, quizObject, true) );
                 enableElement(nextButton);
             } else {
-                removeClass(responseElement, "alert-success");
-                addClass(responseElement, "alert-warning");
-                responseElement.appendChild( buildResponseTemplate(optionElement, quizObject, false) );
+                removeClass(responseWrapper, "alert-success");
+                addClass(responseWrapper, "alert-warning");
+                responseWrapper.appendChild( buildResponseTemplate(optionElement, quizObject, false) );
             }
 
         }
