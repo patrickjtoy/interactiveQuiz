@@ -22,7 +22,7 @@
         return element.classList.remove(className);
     };
 
-    var QuizFP = (function() {
+    var Quiz = function() {
 
         // CACHE SELECTORS & VARIABLES
         // ==============================
@@ -45,13 +45,80 @@
                 }
             ];
 
-        // GET A QUESTION
+        // START APP
         // ==============================
-        function quizObjectAt(index) {
-            return quizObjects[index];
+        (function() {
+            displayQuestion(0);
+            handleResponse(0);
+            var handleNext = handleNextOver(0);
+            nextButton.addEventListener('click', handleNext);
+        })();
+
+        // HANDLE USER RESPONSE
+        // ==============================
+        function handleResponse(index) {
+            var optionElements = Array.prototype.slice.call(document.querySelectorAll('.option'));
+
+            optionElements.forEach(function(optionElement) {
+                optionElement.addEventListener('click', function() {
+                    displayResponse(optionElement, quizObjects[index]);
+                });
+            });
         }
 
-        // GET QUESTION OPTIONS TEMPLATE
+        // HANDLE NEXT BUTTON
+        // ==============================
+        function handleNextOver(index) {
+            return function handleNext() {
+                if ((index + 1) === quizObjects.length) index = -1;
+                displayQuestion(++index);
+                addClass(responseElement.parentNode, "hidden");
+                addClass(nextButton, "disabled");
+                handleResponse(index);
+            }
+        }
+
+        // DISPLAY QUESTION
+        // ==============================
+        function displayQuestion(index) {
+            var quizObject = quizObjects[index];
+
+            questionElement.innerText = quizObject.question;
+            optionsElement.innerHTML  = buildOptionTmpl(quizObject);
+        }
+
+        // CHECK SELECTED ANSWER
+        // ==============================
+        function checkAnswer(optionElement, quizObject) {
+
+            var answerId = optionElement.getAttribute('data-answerId');
+
+            return quizObject.correctAnswer === +answerId;
+
+        }
+
+        // DISPLAY RESPONSE
+        // ==============================
+        function displayResponse(optionElement, quizObject) {
+
+            if ( responseElement !== null ) responseElement.innerHTML = "";
+
+            removeClass(responseElement.parentNode, "hidden");
+
+            if (checkAnswer(optionElement, quizObject) === true) {
+                removeClass(responseElement, "alert-warning");
+                addClass(responseElement, "alert-success");
+                responseElement.appendChild( buildResponseTmpl(optionElement, quizObject, true) );
+                removeClass(nextButton, "disabled");
+            } else {
+                removeClass(responseElement, "alert-success");
+                addClass(responseElement, "alert-warning");
+                responseElement.appendChild( buildResponseTmpl(optionElement, quizObject, false) );
+            }
+
+        }
+
+        // BUILD OPTIONS TEMPLATE
         // ==============================
         function buildOptionTmpl(quizObject) {
 
@@ -61,7 +128,7 @@
             var optionLabel   = "";
             var optionTmpl    = "<ul>";
 
-            numChoices.forEach(function(value, index)) {
+            numChoices.forEach(function(value, index) {
 
                 optionRadioId = 'option-' + index;
 
@@ -77,30 +144,18 @@
 
         }
 
-        // CHECK SELECTED ANSWER
+        // BUILD RESPONSE TEMPLATE
         // ==============================
-        function checkAnswer(optionElement, quizObject) {
-
-            var answerId = optionElement.getAttribute('data-answerId');
-
-            return quizObject.correctAnswer === +answerId;
-
-        }
-
-        // GET RESPONSE
-        // ==============================
-        function getResponse(optionElement, nextButton, quizObject) {
+        function buildResponseTmpl(optionElement, quizObject, isCorrect) {
 
             var responseElement = document.createElement('div');
             var optionElements  = document.querySelectorAll('.option');
 
-            if (checkAnswer(optionElement, quizObject) === true) {
+            if (isCorrect) {
 
                 Array.prototype.forEach.call(optionElements, function(optionElement) {
                     disableElement(optionElement);
                 });
-
-                enableElement(nextButton);
 
                 responseElement.appendChild(document.createTextNode('You are correct!'));
 
@@ -112,224 +167,10 @@
 
         }
 
-        // DISPLAY RESPONSE
-        // ==============================
-        function displayResponse(optionElement, nextButton, quizObject) {
-
-            if ( responseElement !== null ) responseElement.innerHTML = "";
-
-            removeClass(responseElement.parentNode, "hidden");
-
-            addClass(responseElement, "alert-warning");
-
-            responseElement.appendChild( getResponse(optionElement, nextButton, quizObject) );
-
-        }
-
-        // DISPLAY QUESTION
-        // ==============================
-        function displayQuestion(index) {
-            var quizObject = quizObjectAt(index);
-
-            questionElement.innerText = quizObject.question;
-            optionsElement.innerHTML  = buildOptionTmpl(quizObject);
-        }
-
-    });
-
-    var quiz = {
-
-        // CACHE SELECTORS & VARIABLES
-        // ==============================
-        counter: 0,
-        wrapper:    $('.wrapper'),
-        responseElement: $('.response'),
-        questionElement: $('.question'),
-        optionsElement:  $('.options'),
-        nextButton:    $('.nextButton'),
-
-        // GET ALL QUESTIONS
-        // ==============================
-        getAllQuestions: function() {
-
-            return [
-                {
-                    question: "Who is Prime Minister of the United Kingdom?",
-                    choices: ["David Cameron", "Gordon Brown", "Winston Churchill", "Tony Blair"],
-                    correctAnswer: 0
-                },
-                {
-                    question: "Who is President of the United States?",
-                    choices: ["Bill Clinton", "Ronald Reagan", "Barack Obama", "George Bush"],
-                    correctAnswer: 2
-                }
-            ];
-
-        },
-
-        // GET A QUESTION
-        // ==============================
-        getQuestion: function() {
-
-            this.questionObj = this.allQuestions[this.counter];
-
-            return this.questionObj.question;
-
-        },
-
-        // GET QUESTION OPTIONS
-        // ==============================
-        getOptionTmpl: function(question) {
-
-            var numChoices     = this.questionObj.choices.length,
-                    optionEl,
-                    optionRadio,
-                    optionLabel,
-                    optionTmpl = '<ul>';
-
-            for (var i = 0; i < numChoices; i++) {
-
-                var optionRadioId = 'option-' + i;
-
-                optionRadio = '<input type="radio" name="option" id="' + optionRadioId + '" class="option" data-answerId="' + i + '" />';
-
-                optionLabel = '<label for="' + optionRadioId + '">' + this.questionObj.choices[i] + '</label>';
-
-                optionTmpl += '<li>' + optionRadio + optionLabel + '</li>';
-
-            }
-
-            return optionTmpl + '</ul>';
-
-        },
-
-        // CHECK SELECTED ANSWER
-        // ==============================
-        checkAnswer: function(el) {
-
-            var answerId = el.getAttribute('data-answerId');
-
-            return this.allQuestions[this.counter].correctAnswer == answerId;
-
-        },
-
-        // GET RESPONSE
-        // ==============================
-        getResponse: function(el) {
-
-            var responseElement = document.createElement('div'),
-                    radioBtns  = document.querySelectorAll('.option');
-
-            if (this.checkAnswer(el) === true) {
-
-                Array.prototype.forEach.call(radioBtns, function(el) {
-                    disableElement(el);
-                });
-
-                responseElement.appendChild(document.createTextNode('You are correct!'));
-
-            }
-
-            else {
-
-                    responseElement.appendChild(
-                        document.createTextNode('Not quite, try again!')
-                    );
-
-            }
-
-            return responseElement;
-
-        },
-
-        // DISPLAY RESPONSE
-        // ==============================
-        displayResponse: function(el) {
-
-            if ( this.responseElement !== null )
-                this.responseElement.innerHTML = '';
-
-            removeClass(this.responseElement.parentNode, 'hidden');
-
-            addClass(this.responseElement, 'alert-warning');
-
-            this.responseElement.appendChild( this.getResponse(el) );
-
-        },
-
-        // GET NEXT QUESTION
-        // ==============================
-        nextQuestion: function(qNum) {
-
-            this.question.remove();
-            wrapper.appendChild( this.getQuestion(qNum) );
-
-        },
-
-        // REGISTER EVENT HANDLERS
-        // ==============================
-        events: {
-
-            // Loop over radioBtns in the DOM, assigning a click handler to each one
-            clickRadioBtn: function() {
-
-                var self      = this, // 'this' is the quiz object
-                        radioBtns = document.querySelectorAll('.option');
-
-                Array.prototype.forEach.call(radioBtns, function(el) {
-                    el.addEventListener('click', function() {
-                        self.displayResponse.call(self, this);
-                    });
-                });
-
-            },
-
-            clicknextButton: function() {
-
-                var self = this;
-
-                // Assign a click handler to nextButton
-                this.nextButton.addEventListener('click', function() {
-                    self.nextQuestion(++self.counter);
-                });
-
-            },
-
-            changeResponse: function() {
-
-                // Assign a change handler to this.response
-                this.response.addEventListener('onchange', function() {
-                    console.log('changed');
-                });
-
-            },
-
-            initialize: function() {
-
-                this.clickRadioBtn.call(quiz);
-
-            }
-
-        },
-
-        // INITIALIZE APP
-        // ==============================
-        initialize: function() {
-
-            // Set globals
-            this.allQuestions = this.getAllQuestions();
-
-            this.questionElement.innerText = this.getQuestion();
-            this.optionsElement.innerHTML = this.getOptionTmpl();
-
-            this.events.initialize();
-
-        }
-
     };
 
-    // START APP
+    // BOOTSTRAP APP
     // ==============================
-    window.onload = quiz.initialize();
+    window.onload = Quiz;
 
 })();
