@@ -2,24 +2,44 @@
 
     "use strict";
 
-    var $ = function (element) {
-        return document.querySelector(element);
+    var $ = function(element) {
+        var nodes = document.querySelectorAll(element);
+        if (nodes.length > 1) return nodes;
+        else return nodes[0];
     };
 
-    var disableElement = function (element) {
-        return element.setAttribute("disabled", "disabled");
+    var appendChildren = function(element, children) {
+        children.forEach(function(child) {
+            element.appendChild(child);
+        });
+        return element;
+    };
+
+    var setAttributes = function(element, attributes) {
+        attributes.forEach(function(attribute) {
+            element.setAttribute(attribute.name, attribute.value)
+        });
+        return element;
+    };
+
+    var disableElement = function(element) {
+        element.setAttribute("disabled", "disabled");
+        addClass(element, "disabled");
     };
 
     var enableElement = function(element) {
-        return element.removeAttribute("disabled");
+        element.removeAttribute("disabled");
+        removeClass(element, "disabled");
     };
 
     var addClass = function(element, className) {
-        return element.classList.add(className);
+        element.classList.add(className);
+        return element;
     };
 
-    var removeClass = function (element, className) {
-        return element.classList.remove(className);
+    var removeClass = function(element, className) {
+        element.classList.remove(className);
+        return element;
     };
 
     var Quiz = function() {
@@ -57,7 +77,7 @@
         // HANDLE USER RESPONSE
         // ==============================
         function handleResponse(index) {
-            var optionElements = Array.prototype.slice.call(document.querySelectorAll('.option'));
+            var optionElements = Array.prototype.slice.call($(".option"));
 
             optionElements.forEach(function(optionElement) {
                 optionElement.addEventListener('click', function() {
@@ -70,12 +90,38 @@
         // ==============================
         function handleNextOver(index) {
             return function handleNext() {
-                if ((index + 1) === quizObjects.length) index = -1;
-                displayQuestion(++index);
+                // Increment index
+                index++;
+
+                // Enable looping through questions
+                if ((index) === quizObjects.length) index = 0;
+
+                // Remove previous question
+                clearPreviousQuestion(index);
+
+                // Show next question
+                displayQuestion(index);
+
+                // Hide response message
                 addClass(responseElement.parentNode, "hidden");
+
+                // Disable next button
                 addClass(nextButton, "disabled");
+
+                // Enable response listeners
                 handleResponse(index);
             }
+        }
+
+        // CLEAR QUESTION
+        // ==============================
+        function clearPreviousQuestion(index) {
+            var quizObject = quizObjects[index];
+            var children = Array.prototype.slice.call(optionsElement.childNodes);
+
+            children.forEach(function(child) {
+                optionsElement.removeChild(child);
+            });
         }
 
         // DISPLAY QUESTION
@@ -84,7 +130,7 @@
             var quizObject = quizObjects[index];
 
             questionElement.innerText = quizObject.question;
-            optionsElement.innerHTML  = buildOptionTmpl(quizObject);
+            optionsElement.appendChild( buildOptionTemplate(quizObject) );
         }
 
         // CHECK SELECTED ANSWER
@@ -108,62 +154,69 @@
             if (checkAnswer(optionElement, quizObject) === true) {
                 removeClass(responseElement, "alert-warning");
                 addClass(responseElement, "alert-success");
-                responseElement.appendChild( buildResponseTmpl(optionElement, quizObject, true) );
-                removeClass(nextButton, "disabled");
+                responseElement.appendChild( buildResponseTemplate(optionElement, quizObject, true) );
+                enableElement(nextButton);
             } else {
                 removeClass(responseElement, "alert-success");
                 addClass(responseElement, "alert-warning");
-                responseElement.appendChild( buildResponseTmpl(optionElement, quizObject, false) );
+                responseElement.appendChild( buildResponseTemplate(optionElement, quizObject, false) );
             }
 
         }
 
         // BUILD OPTIONS TEMPLATE
         // ==============================
-        function buildOptionTmpl(quizObject) {
+        function buildOptionTemplate(quizObject) {
 
-            var numChoices    = quizObject.choices;
-            var optionRadio   = "";
-            var optionRadioId = ""
-            var optionLabel   = "";
-            var optionTmpl    = "<ul>";
+            var numChoices     = quizObject.choices;
+            var optionTemplate = document.createElement("ul");
 
             numChoices.forEach(function(value, index) {
 
-                optionRadioId = 'option-' + index;
-
-                optionRadio = '<input type="radio" name="option" id="' + optionRadioId + '" class="option" data-answerId="' + index + '" />';
-
-                optionLabel = '<label for="' + optionRadioId + '">' + numChoices[index] + '</label>';
-
-                optionTmpl += '<li>' + optionRadio + optionLabel + '</li>';
+                optionTemplate.appendChild(
+                    appendChildren(
+                        document.createElement("li"), [
+                            addClass(
+                                setAttributes(document.createElement("input"), [
+                                    { name: "type", value: "radio" },
+                                    { name: "name", value: "option" },
+                                    { name: "id"  , value: "option-" + index },
+                                    { name: "data-answerId", value: index }
+                                ]),
+                                "option"
+                            ),
+                            appendChildren(
+                                setAttributes(document.createElement("label"), [
+                                    { name: "for", value: "option-" + index }
+                                ]), [
+                                    document.createTextNode(numChoices[index])
+                                ]
+                            )
+                        ]
+                    )
+                );
 
             });
 
-            return optionTmpl + '</ul>';
+            return optionTemplate;
 
         }
 
         // BUILD RESPONSE TEMPLATE
         // ==============================
-        function buildResponseTmpl(optionElement, quizObject, isCorrect) {
+        function buildResponseTemplate(optionElement, quizObject, isCorrect) {
 
-            var responseElement = document.createElement('div');
-            var optionElements  = document.querySelectorAll('.option');
+            var responseTemplate = document.createElement('div');
+            var optionElements  = Array.prototype.slice.call($('.option'));
 
             if (isCorrect) {
-
-                Array.prototype.forEach.call(optionElements, function(optionElement) {
-                    disableElement(optionElement);
-                });
-
-                responseElement.appendChild(document.createTextNode('You are correct!'));
-
+                optionElements.forEach(disableElement);
+                responseTemplate.appendChild(document.createTextNode('You are correct!'));
             } else {
-                responseElement.appendChild(document.createTextNode('Not quite, try again!'));
+                responseTemplate.appendChild(document.createTextNode('Not quite, try again!'));
             }
 
-            return responseElement;
+            return responseTemplate;
 
         }
 
